@@ -27,10 +27,15 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Android SDK packages
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+        run: |
+          sdkmanager --install \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
 
       - name: Create native Android project
         shell: bash
@@ -111,7 +116,8 @@ jobs:
           cat > app/src/main/res/values/styles.xml <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
           <resources>
-              <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+              <style name="AppTheme"
+                  parent="android:style/Theme.Material.Light.NoActionBar">
                   <item name="android:fontFamily">sans</item>
                   <item name="android:colorAccent">#D4AF37</item>
                   <item name="android:statusBarColor">#0A1026</item>
@@ -172,7 +178,8 @@ jobs:
                   page.addView(title, fullWidth());
 
                   TextView subtitle = new TextView(this);
-                  subtitle.setText("Your daily companion in worship & good deeds.");
+                  subtitle.setText(
+                      "Your daily companion in worship & good deeds.");
                   subtitle.setTextSize(14);
                   subtitle.setTextColor(gold);
                   subtitle.setGravity(Gravity.CENTER);
@@ -180,17 +187,22 @@ jobs:
                   page.addView(subtitle, fullWidth());
 
                   addHeading(page, "Assalamu Alaikum");
+
                   addCard(page, "Your worship journey",
-                          "A fresh beginning. Build consistency, one day at a time.");
+                      "A fresh beginning. Build consistency, one day at a time.");
+
                   addCard(page, "Daily Salah",
-                          "Fajr  •  Dhuhr  •  Asr  •  Maghrib  •  Isha");
+                      "Fajr  •  Dhuhr  •  Asr  •  Maghrib  •  Isha");
+
                   addCard(page, "Qur'an & Adhkar",
-                          "Your daily remembrance and Qur'an journey.");
+                      "Your daily remembrance and Qur'an journey.");
+
                   addCard(page, "Good Deeds",
-                          "Keep track of kindness, charity, and beneficial actions.");
+                      "Keep track of kindness, charity, and beneficial actions.");
 
                   TextView footer = new TextView(this);
-                  footer.setText("Developed by Yahyah Habeeb Oladimeji\nYoung Salafy");
+                  footer.setText(
+                      "Developed by Yahyah Habeeb Oladimeji\nYoung Salafy");
                   footer.setTextColor(ivory);
                   footer.setTextSize(12);
                   footer.setGravity(Gravity.CENTER);
@@ -210,7 +222,7 @@ jobs:
                   parent.addView(heading, fullWidth());
               }
 
-              private void addCard(LinearLayout parent, String headingText,
+              private void addCard(LinearLayout parent, String titleText,
                                    String bodyText) {
                   LinearLayout card = new LinearLayout(this);
                   card.setOrientation(LinearLayout.VERTICAL);
@@ -218,7 +230,7 @@ jobs:
                   card.setBackgroundColor(Color.rgb(23, 32, 58));
 
                   TextView heading = new TextView(this);
-                  heading.setText(headingText);
+                  heading.setText(titleText);
                   heading.setTextColor(gold);
                   heading.setTextSize(17);
                   heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
@@ -232,22 +244,22 @@ jobs:
                   card.addView(body, fullWidth());
 
                   LinearLayout.LayoutParams params =
-                          new LinearLayout.LayoutParams(
-                                  ViewGroup.LayoutParams.MATCH_PARENT,
-                                  ViewGroup.LayoutParams.WRAP_CONTENT);
+                      new LinearLayout.LayoutParams(
+                          ViewGroup.LayoutParams.MATCH_PARENT,
+                          ViewGroup.LayoutParams.WRAP_CONTENT);
                   params.setMargins(0, 0, 0, dp(14));
                   parent.addView(card, params);
               }
 
               private LinearLayout.LayoutParams fullWidth() {
                   return new LinearLayout.LayoutParams(
-                          ViewGroup.LayoutParams.MATCH_PARENT,
-                          ViewGroup.LayoutParams.WRAP_CONTENT);
+                      ViewGroup.LayoutParams.MATCH_PARENT,
+                      ViewGroup.LayoutParams.WRAP_CONTENT);
               }
 
               private int dp(int value) {
                   return (int) (value * getResources()
-                          .getDisplayMetrics().density + 0.5f);
+                      .getDisplayMetrics().density + 0.5f);
               }
           }
           EOF
