@@ -22,3 +22,274 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+
+      - name: Set up Android SDK
+        shell: bash
+        run: |
+          if [ -z "$ANDROID_HOME" ]; then
+            echo "ERROR: ANDROID_HOME is not set."
+            exit 1
+          fi
+
+          echo "Android SDK: $ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+
+          if [ ! -x "$SDKMANAGER" ]; then
+            echo "ERROR: sdkmanager not found at $SDKMANAGER"
+            echo "Searching for available SDK tools..."
+            find "$ANDROID_HOME/cmdline-tools" -name sdkmanager -type f || true
+            exit 1
+          fi
+
+          "$SDKMANAGER" --version
+
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+
+          "$SDKMANAGER" --install \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Create native Android project
+        shell: bash
+        run: |
+          mkdir -p app/src/main/java/com/myworshipcompanion
+          mkdir -p app/src/main/res/values
+
+          cat > settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+
+          rootProject.name = "MyWorshipCompanion"
+          include(":app")
+          EOF
+
+          cat > build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.7.3' apply false
+          }
+          EOF
+
+          cat > gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          EOF
+
+          cat > app/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+              namespace 'com.myworshipcompanion'
+              compileSdk 35
+
+              defaultConfig {
+                  applicationId 'com.myworshipcompanion'
+                  minSdk 26
+                  targetSdk 35
+                  versionCode 1
+                  versionName '1.0.0'
+              }
+          }
+          EOF
+
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <application
+                  android:allowBackup="true"
+                  android:label="My Worship Companion"
+                  android:theme="@style/AppTheme">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          cat > app/src/main/res/values/styles.xml <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <style name="AppTheme"
+                  parent="android:style/Theme.Material.Light.NoActionBar">
+                  <item name="android:fontFamily">sans</item>
+                  <item name="android:colorAccent">#D4AF37</item>
+                  <item name="android:statusBarColor">#0A1026</item>
+                  <item name="android:navigationBarColor">#0A1026</item>
+                  <item name="android:windowLightStatusBar">false</item>
+              </style>
+          </resources>
+          EOF
+
+          cat > app/src/main/java/com/myworshipcompanion/MainActivity.java <<'EOF'
+          package com.myworshipcompanion;
+
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.graphics.Color;
+          import android.graphics.Typeface;
+          import android.view.Gravity;
+          import android.view.ViewGroup;
+          import android.widget.LinearLayout;
+          import android.widget.ScrollView;
+          import android.widget.TextView;
+
+          public class MainActivity extends Activity {
+
+              private final int navy = Color.rgb(10, 16, 38);
+              private final int gold = Color.rgb(212, 175, 55);
+              private final int ivory = Color.rgb(248, 246, 239);
+
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  getWindow().setStatusBarColor(navy);
+                  getWindow().setNavigationBarColor(navy);
+
+                  ScrollView scroll = new ScrollView(this);
+                  scroll.setFillViewport(true);
+                  scroll.setBackgroundColor(navy);
+
+                  LinearLayout page = new LinearLayout(this);
+                  page.setOrientation(LinearLayout.VERTICAL);
+                  page.setPadding(dp(22), dp(28), dp(22), dp(30));
+                  scroll.addView(page);
+
+                  TextView moon = new TextView(this);
+                  moon.setText("☾");
+                  moon.setTextSize(52);
+                  moon.setTextColor(gold);
+                  moon.setGravity(Gravity.CENTER);
+                  page.addView(moon, fullWidth());
+
+                  TextView title = new TextView(this);
+                  title.setText("MY WORSHIP COMPANION");
+                  title.setTextSize(23);
+                  title.setTextColor(ivory);
+                  title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+                  title.setGravity(Gravity.CENTER);
+                  title.setPadding(0, dp(8), 0, dp(8));
+                  page.addView(title, fullWidth());
+
+                  TextView subtitle = new TextView(this);
+                  subtitle.setText(
+                      "Your daily companion in worship & good deeds.");
+                  subtitle.setTextSize(14);
+                  subtitle.setTextColor(gold);
+                  subtitle.setGravity(Gravity.CENTER);
+                  subtitle.setPadding(0, 0, 0, dp(28));
+                  page.addView(subtitle, fullWidth());
+
+                  addHeading(page, "Assalamu Alaikum");
+
+                  addCard(page, "Your worship journey",
+                      "A fresh beginning. Build consistency, one day at a time.");
+
+                  addCard(page, "Daily Salah",
+                      "Fajr  •  Dhuhr  •  Asr  •  Maghrib  •  Isha");
+
+                  addCard(page, "Qur'an & Adhkar",
+                      "Your daily remembrance and Qur'an journey.");
+
+                  addCard(page, "Good Deeds",
+                      "Keep track of kindness, charity, and beneficial actions.");
+
+                  TextView footer = new TextView(this);
+                  footer.setText(
+                      "Developed by Yahyah Habeeb Oladimeji\nYoung Salafy");
+                  footer.setTextColor(ivory);
+                  footer.setTextSize(12);
+                  footer.setGravity(Gravity.CENTER);
+                  footer.setPadding(0, dp(26), 0, dp(10));
+                  page.addView(footer, fullWidth());
+
+                  setContentView(scroll);
+              }
+
+              private void addHeading(LinearLayout parent, String text) {
+                  TextView heading = new TextView(this);
+                  heading.setText(text);
+                  heading.setTextColor(gold);
+                  heading.setTextSize(20);
+                  heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+                  heading.setPadding(0, 0, 0, dp(12));
+                  parent.addView(heading, fullWidth());
+              }
+
+              private void addCard(LinearLayout parent, String titleText,
+                                   String bodyText) {
+                  LinearLayout card = new LinearLayout(this);
+                  card.setOrientation(LinearLayout.VERTICAL);
+                  card.setPadding(dp(16), dp(16), dp(16), dp(16));
+                  card.setBackgroundColor(Color.rgb(23, 32, 58));
+
+                  TextView heading = new TextView(this);
+                  heading.setText(titleText);
+                  heading.setTextColor(gold);
+                  heading.setTextSize(17);
+                  heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+                  card.addView(heading, fullWidth());
+
+                  TextView body = new TextView(this);
+                  body.setText(bodyText);
+                  body.setTextColor(ivory);
+                  body.setTextSize(14);
+                  body.setPadding(0, dp(8), 0, 0);
+                  card.addView(body, fullWidth());
+
+                  LinearLayout.LayoutParams params =
+                      new LinearLayout.LayoutParams(
+                          ViewGroup.LayoutParams.MATCH_PARENT,
+                          ViewGroup.LayoutParams.WRAP_CONTENT);
+                  params.setMargins(0, 0, 0, dp(14));
+                  parent.addView(card, params);
+              }
+
+              private LinearLayout.LayoutParams fullWidth() {
+                  return new LinearLayout.LayoutParams(
+                      ViewGroup.LayoutParams.MATCH_PARENT,
+                      ViewGroup.LayoutParams.WRAP_CONTENT);
+              }
+
+              private int dp(int value) {
+                  return (int) (value * getResources()
+                      .getDisplayMetrics().density + 0.5f);
+              }
+          }
+          EOF
+
+      - name: Build debug APK
+        run: gradle --no-daemon assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: My-Worship-Companion-Android
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
